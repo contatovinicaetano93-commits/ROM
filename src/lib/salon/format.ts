@@ -1,3 +1,15 @@
+export const SALON_TIMEZONE = 'America/Sao_Paulo'
+
+/** Data calendária de hoje no fuso do salão (YYYY-MM-DD). */
+export function todayIso(timeZone = SALON_TIMEZONE): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date())
+}
+
 export function fmtSchedule(iso: string) {
   const d = new Date(iso)
   const today = new Date()

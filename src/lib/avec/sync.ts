@@ -13,6 +13,7 @@ import {
 import { getDailyReports, resolveReportId } from '@/lib/avec/registry'
 import { saveReportSnapshot } from '@/lib/avec/snapshots'
 import { recomputeSalonMetricsFromRom, upsertSalonMetrics } from '@/lib/salon/metrics'
+import { todayIso } from '@/lib/salon/format'
 
 export interface AvecSyncStats {
   clients_upserted: number
@@ -192,7 +193,7 @@ async function syncRevenue(stats: AvecSyncStats, syncRunId?: string) {
   const rows = await fetchAllAvecReport(reportId, params)
   await snapshotReport(reportId, params, rows, stats, syncRunId)
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayIso()
   let revenue = 0
   let attended = 0
 
@@ -200,7 +201,7 @@ async function syncRevenue(stats: AvecSyncStats, syncRunId?: string) {
     const rev = normalizeRevenueRow(row)
     if (!rev) continue
     stats.revenue_rows++
-    if (!rev.day || rev.day === today) {
+    if (rev.day === today) {
       revenue += rev.revenue
       attended += rev.attended
     }
@@ -227,7 +228,7 @@ async function syncCancellations(stats: AvecSyncStats, syncRunId?: string) {
   const rows = await fetchAllAvecReport(reportId, params)
   await snapshotReport(reportId, params, rows, stats, syncRunId)
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayIso()
   let cancelled = 0
   let no_shows = 0
 
@@ -235,7 +236,7 @@ async function syncCancellations(stats: AvecSyncStats, syncRunId?: string) {
     const c = normalizeCancellationRow(row)
     if (!c) continue
     stats.cancellation_rows++
-    if (!c.day || c.day === today) {
+    if (c.day === today) {
       cancelled += c.cancelled
       no_shows += c.noShow
     }

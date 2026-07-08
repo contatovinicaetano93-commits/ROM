@@ -3,6 +3,7 @@ import type { ContactRow } from '@/lib/contacts'
 import type { EnrichedService, Recommendation } from '@/lib/recommendations'
 import { fetchContactKpis } from '@/lib/salon/kpis'
 import { getSalonMetrics } from '@/lib/salon/metrics'
+import { todayIso } from '@/lib/salon/format'
 import { listActionItems } from '@/lib/salon/recommendations'
 import { listUpcomingSchedules } from '@/lib/services'
 
@@ -52,7 +53,7 @@ export function buildContactContext(
 }
 
 export async function buildSalonContext(): Promise<SalonContext> {
-  const day = new Date().toISOString().slice(0, 10)
+  const day = todayIso()
   const [salon, kpis_contato, playbook_top5, agendamentos_proximos] = await Promise.all([
     getSalonMetrics(day),
     fetchContactKpis(7),

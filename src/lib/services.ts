@@ -137,3 +137,18 @@ export async function listUpcomingSchedules(days = 7, limit = 20): Promise<Sched
     limit ${limit}
   `) as ScheduledServiceRow[]
 }
+
+/** Agendamentos de um dia calendário (fuso São Paulo) — inclui horários já passados no dia. */
+export async function listSchedulesForDay(day: string, limit = 20): Promise<ScheduledServiceRow[]> {
+  const sql = getSql()
+  return (await sql`
+    select cs.*, c.name as contact_name
+    from client_services cs
+    join contacts c on c.id = cs.contact_id
+    where cs.active = true
+      and cs.scheduled_at is not null
+      and (cs.scheduled_at at time zone 'America/Sao_Paulo')::date = ${day}::date
+    order by cs.scheduled_at asc
+    limit ${limit}
+  `) as ScheduledServiceRow[]
+}

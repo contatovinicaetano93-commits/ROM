@@ -1,4 +1,5 @@
 import { getSql } from '@/lib/db'
+import { todayIso } from '@/lib/salon/format'
 
 export interface SalonDailyMetrics {
   day: string
@@ -24,9 +25,14 @@ export interface SalonMetricsPatch {
   ticket_avg?: number | null
 }
 
-function todayIso() {
-  return new Date().toISOString().slice(0, 10)
-}
+/** Campos que vêm do Avec — recompute ROM nunca sobrescreve. */
+export type AvecMetricsPatch = Pick<
+  SalonMetricsPatch,
+  'revenue' | 'attended' | 'no_shows' | 'cancelled' | 'ticket_avg'
+>
+
+/** Campos calculados só pelo ROM. */
+export type RomMetricsPatch = Pick<SalonMetricsPatch, 'appointments' | 'new_clients' | 'returning_clients'>
 
 export async function getSalonMetrics(day = todayIso()): Promise<SalonDailyMetrics | null> {
   const sql = getSql()
@@ -49,7 +55,7 @@ export async function upsertSalonMetrics(day: string, patch: SalonMetricsPatch) 
   const ticket_avg =
     patch.ticket_avg !== undefined
       ? patch.ticket_avg
-      : attended > 0
+      : attended > 0 && revenue > 0
         ? revenue / attended
         : existing?.ticket_avg ?? null
 
@@ -75,50 +81,32 @@ export async function upsertSalonMetrics(day: string, patch: SalonMetricsPatch) 
   `
 }
 
-// Recalcula métricas do dia a partir dos dados ROM (funciona sem token Avec).
+// Recalcula só métricas ROM (agendamentos, novos, retornos) — não mexe em revenue/attended/no-show do Avec.
 export async function recomputeSalonMetricsFromRom(day = todayIso()) {
   const sql = getSql()
 
-  const [apptRows, attendedRows, newRows, returningRows] = await Promise.all([
+  const [apptRows, newRows, returningRows] = await Promise.all([
     sql`
       select count(*)::int as n from client_services
       where active = true
         and scheduled_at is not null
-        and date_trunc('day', scheduled_at) = ${day}::date
+        and (scheduled_at at time zone 'America/Sao_Paulo')::date = ${day}::date
+    `,
+    sql`
+      select count(*)::int as n from contacts
+      where (created_at at time zone 'America/Sao_Paulo')::date = ${day}::date
     `,
     sql`
       select count(*)::int as n from contacts
       where status = 'convertido'
-        and date_trunc('day', last_contact_at) = ${day}::date
-    `,
-    sql`
-      select count(*)::int as n from contacts
-      where date_trunc('day', created_at) = ${day}::date
-    `,
-    sql`
-      select count(*)::int as n from contacts
-      where status = 'convertido'
-        and date_trunc('day', created_at) < ${day}::date
-        and date_trunc('day', last_contact_at) = ${day}::date
+        and (created_at at time zone 'America/Sao_Paulo')::date < ${day}::date
+        and (last_contact_at at time zone 'America/Sao_Paulo')::date = ${day}::date
     `,
   ])
 
-  const appointments = (apptRows[0] as { n: number }).n
-  const attended = (attendedRows[0] as { n: number }).n
-  const new_clients = (newRows[0] as { n: number }).n
-  const returning_clients = (returningRows[0] as { n: number }).n
-
-  const existing = await getSalonMetrics(day)
-  const no_shows = Math.max(0, appointments - attended - (existing?.cancelled ?? 0))
-
   await upsertSalonMetrics(day, {
-    revenue: existing?.revenue ?? 0,
-    appointments,
-    attended,
-    no_shows: existing?.no_shows ?? no_shows,
-    cancelled: existing?.cancelled ?? 0,
-    new_clients,
-    returning_clients,
-    ticket_avg: existing?.ticket_avg ?? (attended > 0 && existing?.revenue ? existing.revenue / attended : null),
+    appointments: (apptRows[0] as { n: number }).n,
+    new_clients: (newRows[0] as { n: number }).n,
+    returning_clients: (returningRows[0] as { n: number }).n,
   })
 }

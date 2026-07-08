@@ -1,22 +1,23 @@
 import { ok, handleError } from '@/lib/api-response'
 import { getSql } from '@/lib/db'
 import { getSalonMetrics, recomputeSalonMetricsFromRom } from '@/lib/salon/metrics'
+import { todayIso } from '@/lib/salon/format'
 import { listActionItems } from '@/lib/salon/recommendations'
-import { listUpcomingSchedules } from '@/lib/services'
+import { listSchedulesForDay } from '@/lib/services'
 import { getLastAvecSync } from '@/lib/avec/sync'
 import { isAvecConfigured } from '@/lib/avec/client'
 
 export async function GET() {
   try {
-    await recomputeSalonMetricsFromRom().catch(() => {})
+    const day = todayIso()
+    await recomputeSalonMetricsFromRom(day).catch(() => {})
 
-    const day = new Date().toISOString().slice(0, 10)
     const sql = getSql()
 
     const [salon, playbook, scheduleToday, leadRows, avecLast] = await Promise.all([
       getSalonMetrics(day),
       listActionItems(),
-      listUpcomingSchedules(1, 15),
+      listSchedulesForDay(day, 15),
       sql`
         select
           count(*) filter (where status = 'novo')::int as novos,

@@ -14,12 +14,13 @@ export interface CachedBrief {
 
 function isCacheUnavailableError(e: unknown): boolean {
   if (!(e instanceof Error)) return false
+  const code = (e as { code?: unknown }).code
+  if (code === '42P01') return true
+
   const msg = e.message.toLowerCase()
   return (
-    msg.includes('contact_brief_cache') ||
-    msg.includes('does not exist') ||
-    msg.includes('relation') ||
-    msg.includes('undefined table')
+    (msg.includes('undefined table') && msg.includes('contact_brief_cache')) ||
+    /(?:^|:\s|\n)\s*relation\s+["'](?:[^"']+\.)?contact_brief_cache["']\s+does not exist\b/.test(msg)
   )
 }
 

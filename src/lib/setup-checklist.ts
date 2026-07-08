@@ -28,7 +28,8 @@ export const SETUP_ITEMS: SetupItem[] = [
     steps: [
       'Gere um segredo: openssl rand -hex 32 (ou string aleatória longa)',
       'Vercel → CRON_SECRET = o valor gerado',
-      'Protege sync automático: fast a cada 5 min + full 8h (ROM Brasil)',
+      'Protege sync automático: full 8h no Vercel (ROM Brasil)',
+      'Sync fast 5 min: use cron-job.org → POST /api/avec/sync?mode=fast (ver docs/avec-sync-rom-brasil.md)',
       'Redeploy',
     ],
   },

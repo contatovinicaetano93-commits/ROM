@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { RefreshCw, ChevronRight, Database, Link2 } from 'lucide-react'
 import { SectionCard, CountBadge, StatusPill, CHANNEL_LABEL, PrimaryButton } from '../_components/ui'
 import { LogoutButton } from '../_components/LogoutButton'
+import { SetupChecklist } from './SetupChecklist'
 
 interface KpiData {
   byDay: { day: string; channel: string; contacts_count: number }[]
@@ -56,7 +57,7 @@ interface HealthStatus {
   whatsapp: { configured: boolean }
   telegram: { configured: boolean; webhook_secret: boolean }
   cron: { configured: boolean }
-  auth: { enabled: boolean }
+  auth: { enabled: boolean; password?: boolean; user?: boolean }
 }
 
 type LoadState = 'loading' | 'ok' | 'error'
@@ -207,7 +208,21 @@ export default function AdminPage() {
               <HealthRow label="WhatsApp (Evolution)" ok={health.whatsapp.configured} />
               <HealthRow label="Telegram bot" ok={health.telegram.configured} />
               <HealthRow label="CRON_SECRET" ok={health.cron.configured} />
-              <HealthRow label="Proteção /admin" ok={health.auth.enabled} hint={health.auth.enabled ? 'ativa' : 'livre'} />
+              <HealthRow
+                label="Proteção /admin"
+                ok={health.auth.enabled}
+                hint={
+                  health.auth.enabled
+                    ? health.auth.user
+                      ? 'ativa'
+                      : 'ativa (user padrão: admin)'
+                    : 'livre — configure ROM_ADMIN_PASSWORD'
+                }
+              />
+              <div className="border-t border-border pt-4">
+                <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted">Como resolver pendentes</p>
+                <SetupChecklist health={health} />
+              </div>
               <button
                 type="button"
                 onClick={runSeed}

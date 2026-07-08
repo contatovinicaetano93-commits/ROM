@@ -2,6 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { Plus, X, Phone, Search } from 'lucide-react'
+import {
+  Avatar,
+  StatusPill,
+  PrimaryButton,
+  CHANNEL_LABEL,
+  STATUS_LABEL,
+} from '../_components/ui'
 
 interface Contact {
   id: string
@@ -12,28 +19,16 @@ interface Contact {
   created_at: string
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  novo: 'Novo',
-  em_atendimento: 'Em atendimento',
-  agendado: 'Agendado',
-  convertido: 'Convertido',
-  perdido: 'Perdido',
-}
-
-const STATUS_STYLE: Record<string, string> = {
-  novo: 'bg-gold/15 text-gold',
-  em_atendimento: 'bg-blue-500/15 text-blue-300',
-  agendado: 'bg-purple-500/15 text-purple-300',
-  convertido: 'bg-green-500/15 text-green-300',
-  perdido: 'bg-red-500/15 text-red-300',
-}
-
-const CHANNEL_LABEL: Record<string, string> = {
-  whatsapp: 'WhatsApp',
-  telegram: 'Telegram',
-  avec: 'Avec',
-  instagram: 'Instagram',
-  manual: 'Manual',
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime()
+  const min = Math.floor(diff / 60000)
+  if (min < 1) return 'agora'
+  if (min < 60) return `há ${min} min`
+  const h = Math.floor(min / 60)
+  if (h < 24) return `há ${h}h`
+  const d = Math.floor(h / 24)
+  if (d < 30) return `há ${d}d`
+  return new Date(iso).toLocaleDateString('pt-BR')
 }
 
 export default function ContatosPage() {
@@ -85,88 +80,101 @@ export default function ContatosPage() {
   })
 
   return (
-    <main className="flex flex-1 flex-col">
-      <header className="sticky top-0 z-40 border-b border-border bg-background/90 px-5 pb-4 pt-[calc(env(safe-area-inset-top)+1.25rem)] backdrop-blur">
-        <p className="mb-1 text-[0.65rem] uppercase tracking-[0.2em] text-gold">ROM Club</p>
-        <h1 className="text-xl font-semibold">Contatos</h1>
+    <main className="flex flex-1 flex-col gap-5 px-5 py-6">
+      <div>
+        <p className="text-[0.65rem] uppercase tracking-[0.25em] text-gold">Contatos</p>
+        <h1 className="mt-1 text-xl font-semibold">Clientes & leads</h1>
         <p className="mt-0.5 text-xs text-muted">
           {loading
-            ? 'Últimos 50 contatos, todos os canais'
+            ? 'Todos os canais, em um só lugar'
             : `${filtered.length} de ${contacts.length} ${contacts.length === 1 ? 'contato' : 'contatos'}`}
         </p>
-      </header>
+      </div>
 
-      {!loading && contacts.length > 0 && (
-        <div className="flex flex-col gap-3 border-b border-border px-5 py-3">
-          <div className="relative">
-            <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              type="search"
-              inputMode="search"
-              enterKeyHint="search"
-              aria-label="Buscar por nome ou telefone"
-              placeholder="Buscar por nome ou telefone"
-              className="w-full rounded-xl border border-border bg-card py-2.5 pl-10 pr-10 text-base outline-none focus:border-gold"
-            />
-            {query && (
-              <button
-                type="button"
-                onClick={() => setQuery('')}
-                aria-label="Limpar busca"
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted active:text-foreground"
-              >
-                <X size={18} />
-              </button>
-            )}
-          </div>
-          {hasFilters && (
-            <>
-              <FilterRow
-                label="Status"
-                options={statusOptions.map((s) => ({ value: s, label: STATUS_LABEL[s] ?? s }))}
-                active={statusFilter}
-                onSelect={setStatusFilter}
-              />
-              <FilterRow
-                label="Canal"
-                options={channelOptions.map((c) => ({ value: c, label: CHANNEL_LABEL[c] ?? c }))}
-                active={channelFilter}
-                onSelect={setChannelFilter}
-              />
-            </>
+      <PrimaryButton onClick={() => setFormOpen(true)}>
+        <Plus size={20} strokeWidth={2.4} />
+        Novo contato
+      </PrimaryButton>
+
+      {contacts.length > 0 && (
+        <div className="relative">
+          <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            type="search"
+            inputMode="search"
+            enterKeyHint="search"
+            aria-label="Buscar por nome ou telefone"
+            placeholder="Buscar por nome ou telefone"
+            className="w-full rounded-2xl border border-border bg-card py-2.5 pl-10 pr-10 text-base outline-none focus:border-gold"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery('')}
+              aria-label="Limpar busca"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted active:text-foreground"
+            >
+              <X size={18} />
+            </button>
           )}
         </div>
       )}
 
-      <div className="flex flex-col gap-3 px-5 py-6">
-        {error && (
-          <div className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted">
-            Não foi possível carregar ({error}). Confirme se o Supabase está configurado.
-          </div>
-        )}
+      {hasFilters && (
+        <div className="flex flex-col gap-2">
+          <FilterRow
+            label="Status"
+            options={statusOptions.map((s) => ({ value: s, label: STATUS_LABEL[s] ?? s }))}
+            active={statusFilter}
+            onSelect={setStatusFilter}
+          />
+          <FilterRow
+            label="Canal"
+            options={channelOptions.map((c) => ({ value: c, label: CHANNEL_LABEL[c] ?? c }))}
+            active={channelFilter}
+            onSelect={setChannelFilter}
+          />
+        </div>
+      )}
 
+      {error && (
+        <div className="rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted">
+          Não foi possível carregar ({error}). Confirme se o banco está configurado.
+        </div>
+      )}
+
+      <div className="overflow-hidden rounded-2xl border border-border bg-card">
         {loading &&
-          Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-[4.5rem] animate-pulse rounded-xl border border-border bg-card" />
+          Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 border-b border-border px-4 py-3.5 last:border-0">
+              <div className="h-10 w-10 shrink-0 animate-pulse rounded-full bg-border" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3 w-32 animate-pulse rounded bg-border" />
+                <div className="h-2.5 w-20 animate-pulse rounded bg-border" />
+              </div>
+            </div>
           ))}
 
         {!loading && contacts.length === 0 && !error && (
-          <p className="py-12 text-center text-sm text-muted">Nenhum contato ainda. Toque em + para adicionar.</p>
+          <p className="px-4 py-12 text-center text-sm text-muted">Nenhum contato ainda. Toque em “Novo contato”.</p>
         )}
 
         {!loading && contacts.length > 0 && filtered.length === 0 && (
-          <p className="py-12 text-center text-sm text-muted">Nenhum contato encontrado.</p>
+          <p className="px-4 py-12 text-center text-sm text-muted">Nenhum contato encontrado.</p>
         )}
 
         {!loading &&
           filtered.map((c) => (
-            <div key={c.id} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3">
-              <div className="min-w-0">
-                <p className="truncate font-medium">{c.name || c.phone || 'Sem nome'}</p>
-                <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted">
+            <div key={c.id} className="flex items-center gap-3 border-b border-border px-4 py-3 last:border-0">
+              <Avatar name={c.name || c.phone || '?'} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{c.name || c.phone || 'Sem nome'}</p>
+                <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-muted">
                   <span>{CHANNEL_LABEL[c.channel] ?? c.channel}</span>
+                  <span aria-hidden>·</span>
+                  <span>{timeAgo(c.created_at)}</span>
                   {c.phone && (
                     <>
                       <span aria-hidden>·</span>
@@ -178,25 +186,10 @@ export default function ContatosPage() {
                   )}
                 </p>
               </div>
-              <span
-                className={`shrink-0 rounded-full px-2.5 py-1 text-[0.65rem] font-medium ${
-                  STATUS_STYLE[c.status] ?? 'bg-border text-muted'
-                }`}
-              >
-                {STATUS_LABEL[c.status] ?? c.status}
-              </span>
+              <StatusPill status={c.status} />
             </div>
           ))}
       </div>
-
-      <button
-        type="button"
-        onClick={() => setFormOpen(true)}
-        aria-label="Novo contato"
-        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-[max(1.25rem,calc(50%-13.75rem))] z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gold text-background shadow-lg shadow-black/40 active:scale-95 transition-transform"
-      >
-        <Plus size={26} strokeWidth={2.4} />
-      </button>
 
       {formOpen && <NewContactSheet onClose={() => setFormOpen(false)} onCreated={load} />}
     </main>
@@ -274,11 +267,13 @@ function NewContactSheet({ onClose, onCreated }: { onClose: () => void; onCreate
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={onClose}>
+      <div className="animate-fade-in absolute inset-0 bg-black/60" />
       <div
-        className="w-full max-w-md rounded-t-2xl border-t border-border bg-card p-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
+        className="animate-slide-up relative w-full max-w-md rounded-t-2xl border-t border-border bg-card-elevated p-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border" />
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold">Novo contato</h2>
           <button type="button" onClick={onClose} aria-label="Fechar" className="text-muted active:text-foreground">
@@ -293,7 +288,7 @@ function NewContactSheet({ onClose, onCreated }: { onClose: () => void; onCreate
               onChange={(e) => setName(e.target.value)}
               required
               autoFocus
-              className="w-full rounded-xl border border-border bg-background px-4 py-3 text-base outline-none focus:border-gold"
+              className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-gold"
               placeholder="Nome do cliente"
             />
           </Field>
@@ -304,7 +299,7 @@ function NewContactSheet({ onClose, onCreated }: { onClose: () => void; onCreate
               required
               type="tel"
               inputMode="tel"
-              className="w-full rounded-xl border border-border bg-background px-4 py-3 text-base outline-none focus:border-gold"
+              className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-gold"
               placeholder="(11) 90000-0000"
             />
           </Field>
@@ -313,20 +308,16 @@ function NewContactSheet({ onClose, onCreated }: { onClose: () => void; onCreate
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
-              className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 text-base outline-none focus:border-gold"
+              className="w-full resize-none rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-gold"
               placeholder="Ex.: quer agendar coloração"
             />
           </Field>
 
-          {formError && <p className="text-sm text-red-400">{formError}</p>}
+          {formError && <p className="text-sm text-danger">{formError}</p>}
 
-          <button
-            type="submit"
-            disabled={submitting}
-            className="mt-1 w-full rounded-xl bg-gold py-3.5 text-base font-semibold text-background active:scale-[0.99] transition-transform disabled:opacity-60"
-          >
+          <PrimaryButton type="submit" disabled={submitting}>
             {submitting ? 'Salvando…' : 'Salvar contato'}
-          </button>
+          </PrimaryButton>
         </form>
       </div>
     </div>

@@ -1,29 +1,21 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
-import { Users, TrendingUp, MessageCircle } from 'lucide-react'
+import { Area, AreaChart, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
+import { ShieldCheck, RefreshCw, Layers, TrendingUp, Users, Sparkles } from 'lucide-react'
+import {
+  SectionCard,
+  CountBadge,
+  InfoBanner,
+  HealthItem,
+  StatusPill,
+  CHANNEL_LABEL,
+} from '../_components/ui'
 
 interface KpiData {
   byDay: { day: string; channel: string; contacts_count: number }[]
   byStatus: { status: string; contacts_count: number }[]
   conversion: { conversion_rate: number; total_contacts: number } | null
-}
-
-const STATUS_LABEL: Record<string, string> = {
-  novo: 'Novo',
-  em_atendimento: 'Em atendimento',
-  agendado: 'Agendado',
-  convertido: 'Convertido',
-  perdido: 'Perdido',
-}
-
-const CHANNEL_LABEL: Record<string, string> = {
-  whatsapp: 'WhatsApp',
-  telegram: 'Telegram',
-  avec: 'Avec',
-  instagram: 'Instagram',
-  manual: 'Manual',
 }
 
 function aggregateByDay(rows: KpiData['byDay']) {
@@ -39,9 +31,7 @@ function aggregateByDay(rows: KpiData['byDay']) {
 
 function aggregateByChannel(rows: KpiData['byDay']) {
   const map = new Map<string, number>()
-  for (const row of rows) {
-    map.set(row.channel, (map.get(row.channel) ?? 0) + row.contacts_count)
-  }
+  for (const row of rows) map.set(row.channel, (map.get(row.channel) ?? 0) + row.contacts_count)
   return Array.from(map.entries()).sort((a, b) => b[1] - a[1])
 }
 
@@ -65,127 +55,158 @@ export default function DashboardPage() {
   const conversionRate = data?.conversion?.conversion_rate ?? 0
   const chartData = data ? aggregateByDay(data.byDay) : []
   const channelData = data ? aggregateByChannel(data.byDay) : []
+  const activeChannels = new Set(data?.byDay.map((d) => d.channel)).size
+  const statusTotal = data?.byStatus.reduce((s, r) => s + r.contacts_count, 0) ?? 0
+  const channelTotal = channelData.reduce((s, [, v]) => s + v, 0)
+  const novos = data?.byStatus.find((s) => s.status === 'novo')?.contacts_count ?? 0
+  const topChannel = channelData[0]
 
   return (
-    <main className="flex flex-1 flex-col">
-      <header className="sticky top-0 z-40 border-b border-border bg-background/90 px-5 pb-4 pt-[calc(env(safe-area-inset-top)+1.25rem)] backdrop-blur">
-        <p className="mb-1 text-[0.65rem] uppercase tracking-[0.2em] text-gold">ROM Club</p>
-        <h1 className="text-xl font-semibold">Painel de Contatos</h1>
-        <p className="mt-0.5 text-xs text-muted">Todos os canais, em tempo real</p>
-      </header>
-
-      <div className="flex flex-col gap-8 px-5 py-6">
-        {error && (
-          <div className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted">
-            Não foi possível carregar os dados ({error}). Confirme se o Supabase está configurado.
-          </div>
-        )}
-
-        <section className="grid grid-cols-2 gap-3">
-          <KpiCard icon={<Users size={16} />} label="Contatos" value={totalContacts.toString()} loading={loading} />
-          <KpiCard
-            icon={<TrendingUp size={16} />}
-            label="Conversão"
-            value={`${(conversionRate * 100).toFixed(1)}%`}
-            loading={loading}
-          />
-          <KpiCard
-            className="col-span-2"
-            icon={<MessageCircle size={16} />}
-            label="Canais ativos"
-            value={new Set(data?.byDay.map((d) => d.channel)).size.toString()}
-            loading={loading}
-          />
-        </section>
-
-        <section>
-          <h2 className="mb-3 text-xs uppercase tracking-wide text-muted">Contatos por dia</h2>
-          <div className="h-52 rounded-xl border border-border bg-card p-3">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 6, right: 6, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="day" stroke="var(--muted)" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="var(--muted)" fontSize={11} allowDecimals={false} tickLine={false} axisLine={false} width={28} />
-                <Tooltip
-                  contentStyle={{
-                    background: 'var(--card)',
-                    border: '1px solid var(--border)',
-                    borderRadius: 12,
-                    color: 'var(--foreground)',
-                    fontSize: 12,
-                  }}
-                />
-                <Line type="monotone" dataKey="total" stroke="var(--gold)" strokeWidth={2.5} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </section>
-
-        <ListSection
-          title="Status dos contatos"
-          rows={(data?.byStatus ?? []).map((r) => ({ label: STATUS_LABEL[r.status] ?? r.status, value: r.contacts_count }))}
-          empty={!!data && data.byStatus.length === 0}
-        />
-
-        <ListSection
-          title="Contatos por canal"
-          rows={channelData.map(([channel, count]) => ({ label: CHANNEL_LABEL[channel] ?? channel, value: count }))}
-          empty={channelData.length === 0}
-        />
+    <main className="flex flex-1 flex-col gap-6 px-5 py-6">
+      <div>
+        <p className="text-[0.65rem] uppercase tracking-[0.25em] text-gold">Visão geral</p>
+        <h1 className="mt-1 text-xl font-semibold">Atendimento do ROM Club</h1>
       </div>
+
+      {error && (
+        <div className="rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted">
+          Não foi possível carregar os dados ({error}). Confirme se o banco está configurado.
+        </div>
+      )}
+
+      {/* Hero KPI */}
+      <div className="animate-rise rounded-2xl border border-gold/25 bg-gradient-to-b from-gold/10 to-card p-5">
+        <p className="text-xs text-muted">Contatos totais</p>
+        {loading ? (
+          <div className="mt-2 h-10 w-32 animate-pulse rounded-lg bg-border" />
+        ) : (
+          <p className="mt-1 text-4xl font-semibold tabular-nums">{totalContacts}</p>
+        )}
+        <div className="mt-3 flex items-center gap-2 text-sm">
+          <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-xs font-semibold text-success">
+            <TrendingUp size={13} />
+            {(conversionRate * 100).toFixed(1)}%
+          </span>
+          <span className="text-xs text-muted">taxa de conversão</span>
+        </div>
+      </div>
+
+      {/* Mini stats */}
+      <div className="grid grid-cols-2 gap-3">
+        <MiniStat icon={<Users size={15} />} label="Novos aguardando" value={loading ? '—' : String(novos)} />
+        <MiniStat icon={<Layers size={15} />} label="Canais ativos" value={loading ? '—' : String(activeChannels)} />
+      </div>
+
+      {/* Saúde do sistema — resiliência visível */}
+      <SectionCard title="Saúde do sistema">
+        <div className="divide-y divide-border">
+          <HealthItem
+            icon={<ShieldCheck size={17} />}
+            label="Dados protegidos"
+            value="Tudo registrado em contact_events"
+            tone="success"
+          />
+          <HealthItem
+            icon={<RefreshCw size={17} />}
+            label="Sincronização"
+            value={loading ? 'Carregando…' : error ? 'Sem conexão com o banco' : 'Atualizado agora'}
+            tone={error ? 'warning' : 'gold'}
+          />
+          <HealthItem
+            icon={<ShieldCheck size={17} />}
+            label="Resiliência"
+            value="Eventos rastreáveis e reprocessáveis"
+            tone="success"
+          />
+        </div>
+      </SectionCard>
+
+      <InfoBanner
+        title="Mantenha o atendimento em dia"
+        text="Responda os contatos novos rápido — a IA faz o primeiro atendimento, mas a conversão sobe quando a equipe assume na sequência."
+      />
+
+      {/* Gráfico */}
+      <SectionCard title="Contatos por dia">
+        <div className="h-52">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData} margin={{ top: 6, right: 6, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--gold)" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="var(--gold)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+              <XAxis dataKey="day" stroke="var(--muted)" fontSize={11} tickLine={false} axisLine={false} />
+              <YAxis stroke="var(--muted)" fontSize={11} allowDecimals={false} tickLine={false} axisLine={false} width={28} />
+              <Tooltip
+                contentStyle={{
+                  background: 'var(--card-elevated)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 12,
+                  color: 'var(--foreground)',
+                  fontSize: 12,
+                }}
+              />
+              <Area type="monotone" dataKey="total" stroke="var(--gold)" strokeWidth={2.5} fill="url(#gold)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </SectionCard>
+
+      {/* Insight inteligente */}
+      {!loading && topChannel && (
+        <div className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4">
+          <Sparkles size={17} className="mt-0.5 shrink-0 text-gold" />
+          <p className="text-sm leading-relaxed text-foreground/90">
+            <span className="font-semibold text-gold">{CHANNEL_LABEL[topChannel[0]] ?? topChannel[0]}</span> é o canal
+            que mais traz contatos ({topChannel[1]} de {channelTotal}). Priorize a agilidade por lá.
+          </p>
+        </div>
+      )}
+
+      {/* Contatos por canal */}
+      <SectionCard title="Contatos por canal" badge={<CountBadge value={`${channelTotal}`} />}>
+        <div className="divide-y divide-border">
+          {channelData.map(([channel, count]) => (
+            <div key={channel} className="flex items-center justify-between py-3 text-sm">
+              <span className="text-foreground/90">{CHANNEL_LABEL[channel] ?? channel}</span>
+              <span className="font-semibold tabular-nums text-gold">{count}</span>
+            </div>
+          ))}
+          {channelData.length === 0 && (
+            <p className="py-6 text-center text-sm text-muted">Nenhum contato registrado ainda.</p>
+          )}
+        </div>
+      </SectionCard>
+
+      {/* Status dos contatos */}
+      <SectionCard title="Status dos contatos" badge={<CountBadge value={`${statusTotal}`} />}>
+        <div className="flex flex-col gap-2.5">
+          {(data?.byStatus ?? []).map((row) => (
+            <div key={row.status} className="flex items-center justify-between">
+              <StatusPill status={row.status} />
+              <span className="text-sm font-semibold tabular-nums text-foreground/90">{row.contacts_count}</span>
+            </div>
+          ))}
+          {data && data.byStatus.length === 0 && (
+            <p className="py-6 text-center text-sm text-muted">Nenhum contato registrado ainda.</p>
+          )}
+        </div>
+      </SectionCard>
     </main>
   )
 }
 
-function KpiCard({
-  icon,
-  label,
-  value,
-  loading,
-  className = '',
-}: {
-  icon: React.ReactNode
-  label: string
-  value: string
-  loading?: boolean
-  className?: string
-}) {
+function MiniStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className={`rounded-xl border border-border bg-card p-4 ${className}`}>
+    <div className="rounded-2xl border border-border bg-card p-4">
       <div className="mb-2 flex items-center gap-1.5 text-muted">
         {icon}
         <span className="text-[0.65rem] uppercase tracking-wide">{label}</span>
       </div>
-      {loading ? (
-        <div className="h-7 w-16 animate-pulse rounded bg-border" />
-      ) : (
-        <p className="text-2xl font-semibold tabular-nums">{value}</p>
-      )}
+      <p className="text-2xl font-semibold tabular-nums">{value}</p>
     </div>
-  )
-}
-
-function ListSection({
-  title,
-  rows,
-  empty,
-}: {
-  title: string
-  rows: { label: string; value: number }[]
-  empty: boolean
-}) {
-  return (
-    <section>
-      <h2 className="mb-3 text-xs uppercase tracking-wide text-muted">{title}</h2>
-      <div className="divide-y divide-border rounded-xl border border-border bg-card">
-        {rows.map((row) => (
-          <div key={row.label} className="flex justify-between px-4 py-3.5 text-sm">
-            <span>{row.label}</span>
-            <span className="font-medium tabular-nums text-gold">{row.value}</span>
-          </div>
-        ))}
-        {empty && <p className="px-4 py-6 text-center text-sm text-muted">Nenhum contato registrado ainda.</p>}
-      </div>
-    </section>
   )
 }

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { TopBar } from "./_components/TopBar";
 import { BottomNav } from "./_components/BottomNav";
 
 const geistSans = Geist({
@@ -46,6 +47,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         {/* Container mobile-first: largura de celular, centralizado em telas maiores */}
         <div className="mx-auto flex w-full max-w-md flex-1 flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
+          <TopBar />
           {children}
         </div>
         <BottomNav />

@@ -13,7 +13,7 @@ export function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 backdrop-blur pb-[env(safe-area-inset-bottom)]">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 backdrop-blur pb-[env(safe-area-inset-bottom)]">
       <div className="mx-auto flex w-full max-w-md">
         {TABS.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`)
@@ -22,12 +22,15 @@ export function BottomNav() {
               key={href}
               href={href}
               aria-current={active ? 'page' : undefined}
-              className={`flex flex-1 flex-col items-center gap-1 py-3 text-xs transition-colors ${
-                active ? 'text-gold' : 'text-muted active:text-foreground'
-              }`}
+              className="relative flex flex-1 flex-col items-center gap-1 py-3 text-xs"
             >
-              <Icon size={22} strokeWidth={active ? 2.4 : 1.8} />
-              <span className="tracking-wide">{label}</span>
+              {active && <span className="absolute top-0 h-0.5 w-10 rounded-full bg-gold" />}
+              <Icon
+                size={22}
+                strokeWidth={active ? 2.4 : 1.8}
+                className={active ? 'text-gold' : 'text-muted'}
+              />
+              <span className={`tracking-wide ${active ? 'text-gold' : 'text-muted'}`}>{label}</span>
             </Link>
           )
         })}

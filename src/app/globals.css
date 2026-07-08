@@ -2,24 +2,44 @@
 
 :root {
   --background: #0a0908;
-  --foreground: #f2efe9;
+  --surface: #100e0c;
   --card: #16130f;
-  --border: #2c2822;
-  --muted: #938c80;
-  --gold: #c9a24b;
-  --gold-strong: #d9b25a;
+  --card-elevated: #1d1913;
+  --foreground: #f3efe8;
+  --border: #2a2621;
+  --muted: #928b7e;
+
+  --gold: #d4a94e;
+  --gold-strong: #e6bd5c;
+  --gold-bright: #f0b429;
+
+  --success: #3ecf8e;
+  --danger: #ef5f6b;
+  --warning: #f0a641;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
+  --color-card-elevated: var(--card-elevated);
   --color-border: var(--border);
   --color-muted: var(--muted);
+
   --color-gold: var(--gold);
   --color-gold-strong: var(--gold-strong);
+  --color-gold-bright: var(--gold-bright);
+
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
 }
 
 html {
@@ -44,3 +64,26 @@ body {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* Animações fluidas (drawer, sheet, fade) */
+@keyframes rom-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes rom-slide-in-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+@keyframes rom-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes rom-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in { animation: rom-fade-in 0.2s ease-out both; }
+.animate-slide-in-left { animation: rom-slide-in-left 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-slide-up { animation: rom-slide-up 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-rise { animation: rom-rise 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }

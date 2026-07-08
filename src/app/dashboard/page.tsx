@@ -60,7 +60,7 @@ interface AvecStatus {
   last: {
     status: string
     created_at: string
-    stats: { clients_upserted?: number; appointments_synced?: number; attendances_synced?: number }
+    stats: { clients_upserted?: number; appointments_synced?: number; attendances_synced?: number; warnings?: string[] }
     error: string | null
   } | null
 }
@@ -112,7 +112,13 @@ export default function DashboardPage() {
 
         try {
           const avecJson = await avecRes.json()
-          if (avecJson.data) setAvec(avecJson.data)
+          if (avecJson.data) {
+            setAvec(avecJson.data)
+            const syncWarnings = avecJson.data?.last?.stats?.warnings
+            if (Array.isArray(syncWarnings) && syncWarnings.length > 0) {
+              warnings.push(`Avec: ${syncWarnings[0]}`)
+            }
+          }
         } catch {
           // opcional
         }
@@ -362,7 +368,13 @@ export default function DashboardPage() {
                         ? `${avec.last.status === 'ok' ? 'OK' : avec.last.status} · ${new Date(avec.last.created_at).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`
                         : 'Nunca sincronizado — aguardando cron'
                 }
-                tone={avec?.last?.status === 'error' ? 'warning' : avec?.configured ? 'success' : 'warning'}
+                tone={
+                  avec?.last?.status === 'error' || avec?.last?.status === 'partial'
+                    ? 'warning'
+                    : avec?.configured
+                      ? 'success'
+                      : 'warning'
+                }
               />
               <HealthItem
                 icon={<ShieldCheck size={17} />}

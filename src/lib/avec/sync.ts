@@ -1,7 +1,7 @@
 import { getSql } from '@/lib/db'
 import { upsertContact, updateContact, logEvent } from '@/lib/contacts'
 import { listServices, addService, scheduleService, markServiceDone } from '@/lib/services'
-import { fetchAllAvecReport, isAvecConfigured, periodRange } from '@/lib/avec/client'
+import { fetchAllAvecReport, formatTruncationWarning, isAvecConfigured, periodRange } from '@/lib/avec/client'
 import {
   normalizeClientRow,
   normalizeAppointmentRow,
@@ -17,6 +17,7 @@ export interface AvecSyncStats {
   services_scheduled: number
   services_completed: number
   errors: string[]
+  warnings: string[]
 }
 
 export interface AvecSyncRun {
@@ -59,8 +60,9 @@ async function findOrCreateService(contactId: string, serviceName: string) {
 }
 
 async function syncClients(stats: AvecSyncStats) {
-  const rows = await fetchAllAvecReport('0004', { limit: 250 })
-  for (const row of rows) {
+  const result = await fetchAllAvecReport('0004', { limit: 250 })
+  if (result.truncated) stats.warnings.push(formatTruncationWarning('0004', result))
+  for (const row of result.rows) {
     try {
       const c = normalizeClientRow(row)
       if (!c) continue
@@ -81,15 +83,16 @@ async function syncClients(stats: AvecSyncStats) {
 
 async function syncAppointments(stats: AvecSyncStats) {
   const { inicio, fim } = periodRange(1, 21)
-  const rows = await fetchAllAvecReport('0051', {
+  const result = await fetchAllAvecReport('0051', {
     inicio,
     fim,
     site: '',
     profissional_id: '',
     limit: 250,
   })
+  if (result.truncated) stats.warnings.push(formatTruncationWarning('0051', result))
 
-  for (const row of rows) {
+  for (const row of result.rows) {
     try {
       const appt = normalizeAppointmentRow(row)
       if (!appt) continue
@@ -128,14 +131,15 @@ function servicesCreatedRecently(service: { created_at: string }) {
 
 async function syncAttendances(stats: AvecSyncStats) {
   const { inicio, fim } = periodRange(7, 0)
-  const rows = await fetchAllAvecReport('0002', {
+  const result = await fetchAllAvecReport('0002', {
     inicio,
     fim,
     como_conheceu: '',
     limit: 250,
   })
+  if (result.truncated) stats.warnings.push(formatTruncationWarning('0002', result))
 
-  for (const row of rows) {
+  for (const row of result.rows) {
     try {
       const att = normalizeAttendanceRow(row)
       if (!att) continue
@@ -179,6 +183,7 @@ export async function runAvecSync(): Promise<AvecSyncRun> {
     services_scheduled: 0,
     services_completed: 0,
     errors: [],
+    warnings: [],
   }
 
   try {
@@ -189,7 +194,7 @@ export async function runAvecSync(): Promise<AvecSyncRun> {
     const status: AvecSyncRun['status'] =
       stats.errors.length > 0 && stats.clients_upserted + stats.appointments_synced === 0
         ? 'error'
-        : stats.errors.length > 0
+        : stats.errors.length > 0 || stats.warnings.length > 0
           ? 'partial'
           : 'ok'
 

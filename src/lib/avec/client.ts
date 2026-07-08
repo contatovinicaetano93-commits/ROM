@@ -131,14 +131,48 @@ export async function fetchAvecReport(reportId: string, params: AvecReportParams
 }
 
 // Pagina automaticamente até esgotar ou atingir maxPages.
-export async function fetchAllAvecReport(reportId: string, params: AvecReportParams = {}, maxPages = 20) {
+export interface AvecReportFetchResult {
+  rows: Record<string, unknown>[]
+  truncated: boolean
+  pagesFetched: number
+  maxPages: number
+  limit: number
+}
+
+export const AVEC_REPORT_LABELS: Record<string, string> = {
+  '0004': 'clientes',
+  '0051': 'agendamentos',
+  '0002': 'atendimentos',
+}
+
+export function wasPaginationTruncated(rowsOnLastPage: number, limit: number, page: number, maxPages: number) {
+  return page >= maxPages && rowsOnLastPage >= limit
+}
+
+export function formatTruncationWarning(reportId: string, result: AvecReportFetchResult) {
+  const label = AVEC_REPORT_LABELS[reportId] ?? reportId
+  return `Relatório ${label} (${reportId}) atingiu o limite de ${result.maxPages} páginas (${result.rows.length} linhas, ${result.limit}/página). Pode haver dados não sincronizados — contate o suporte ou aumente o limite.`
+}
+
+export async function fetchAllAvecReport(
+  reportId: string,
+  params: AvecReportParams = {},
+  maxPages = 20
+): Promise<AvecReportFetchResult> {
+  const limit = params.limit ?? 250
   const all: Record<string, unknown>[] = []
+  let pagesFetched = 0
+  let truncated = false
+
   for (let page = 1; page <= maxPages; page++) {
-    const payload = await fetchAvecReport(reportId, { ...params, page, limit: params.limit ?? 250 })
+    const payload = await fetchAvecReport(reportId, { ...params, page, limit })
     const rows = extractRows(payload)
+    pagesFetched = page
     if (rows.length === 0) break
     all.push(...rows)
-    if (rows.length < (params.limit ?? 250)) break
+    if (rows.length < limit) break
+    if (wasPaginationTruncated(rows.length, limit, page, maxPages)) truncated = true
   }
-  return all
+
+  return { rows: all, truncated, pagesFetched, maxPages, limit }
 }

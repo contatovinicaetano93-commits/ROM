@@ -45,7 +45,7 @@ interface AvecStatus {
   last: {
     status: string
     created_at: string
-    stats: Record<string, number>
+    stats: Record<string, unknown>
     error: string | null
   } | null
 }
@@ -311,6 +311,13 @@ export default function AdminPage() {
                   <Row label="Último status" value={avec.last.status} />
                   <Row label="Quando" value={fmtIso(avec.last.created_at)} />
                   {avec.last.error && <p className="text-xs text-danger">{avec.last.error}</p>}
+                  {Array.isArray(avec.last.stats?.warnings) && avec.last.stats.warnings.length > 0 && (
+                    <div className="space-y-1 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
+                      {(avec.last.stats.warnings as string[]).map((w) => (
+                        <p key={w}>{w}</p>
+                      ))}
+                    </div>
+                  )}
                   <pre className="overflow-x-auto rounded-xl bg-surface p-3 text-[0.65rem] text-muted">
                     {JSON.stringify(avec.last.stats, null, 2)}
                   </pre>

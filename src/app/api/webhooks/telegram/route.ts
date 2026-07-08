@@ -58,7 +58,6 @@ export async function POST(req: NextRequest) {
 
   const chat = isTelegramChatAllowed(chatId)
   if (!chat.ok) {
-    await sendTelegramMessage(chatId, 'Este bot é restrito à equipe ROM.').catch(() => {})
     return ok({ ignored: true, reason: chat.reason })
   }
 

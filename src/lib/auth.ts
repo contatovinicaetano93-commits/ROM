@@ -3,6 +3,10 @@ import type { NextRequest } from 'next/server'
 export const AUTH_COOKIE = 'rom_session'
 const DEFAULT_ADMIN_USER = 'admin'
 
+interface AuthOptions {
+  allowHeaderTokens?: boolean
+}
+
 function timingSafeEqual(a: string, b: string) {
   if (a.length !== b.length) return false
   let out = 0
@@ -47,7 +51,7 @@ export function validateAdminCredentials(username: string, password: string) {
   return timingSafeEqual(username.trim(), expectedUser) && timingSafeEqual(password, expectedPass)
 }
 
-export async function isAuthorized(req: NextRequest) {
+export async function isAuthorized(req: NextRequest, { allowHeaderTokens = true }: AuthOptions = {}) {
   if (!isAuthEnabled()) return true
 
   const session = req.cookies.get(AUTH_COOKIE)?.value
@@ -55,6 +59,8 @@ export async function isAuthorized(req: NextRequest) {
     const expected = await createSessionToken()
     if (timingSafeEqual(session, expected)) return true
   }
+
+  if (!allowHeaderTokens) return false
 
   const auth = req.headers.get('authorization')
   const cron = process.env.CRON_SECRET

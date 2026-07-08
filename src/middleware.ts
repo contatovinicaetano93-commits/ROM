@@ -9,7 +9,8 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
   if (isPublicPath(pathname, req.method)) return NextResponse.next()
 
-  if (await isAuthorized(req)) return NextResponse.next()
+  const allowHeaderTokens = pathname === '/api/avec/sync'
+  if (await isAuthorized(req, { allowHeaderTokens })) return NextResponse.next()
 
   if (pathname.startsWith('/api/')) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })

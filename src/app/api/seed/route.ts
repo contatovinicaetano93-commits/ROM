@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
       return err('Configure ROM_ADMIN_PASSWORD para usar seed em produção', 503)
     }
 
-    const auth = requireAuth(req)
+    const auth = await requireAuth(req)
     if (!auth.ok) return handleError(new Error(auth.message))
 
     const result = await runSeed()

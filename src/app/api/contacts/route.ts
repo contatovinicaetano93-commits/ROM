@@ -35,7 +35,11 @@ export async function GET(req: NextRequest) {
     }
 
     if (sort === 'urgency') {
-      items.sort((a, b) => b.urgency_score - a.urgency_score || b.created_at.localeCompare(a.created_at))
+      items.sort((a, b) => {
+        const byScore = b.urgency_score - a.urgency_score
+        if (byScore !== 0) return byScore
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      })
     }
 
     return ok(items)

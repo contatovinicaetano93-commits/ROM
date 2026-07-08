@@ -37,6 +37,10 @@ yarn-error.log*
 # notas internas com credenciais
 NOTES.md
 
+# Nunca misturar unidade Iguatemi neste repo (ROM Brasil)
+/ROM-IGUATEMI/
+/rom-iguatemi/
+
 # vercel
 .vercel
 

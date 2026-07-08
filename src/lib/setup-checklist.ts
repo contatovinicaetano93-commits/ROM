@@ -75,7 +75,7 @@ export const SETUP_ITEMS: SetupItem[] = [
       'Gere WHATSAPP_WEBHOOK_SECRET (openssl rand -hex 32)',
       'Webhook Evolution → https://rom-club.vercel.app/api/webhooks/whatsapp',
       'Header do webhook: x-whatsapp-secret = WHATSAPP_WEBHOOK_SECRET',
-      'Opcional: TELEGRAM_STAFF_CHAT_IDS = seu chat ID (alertas de handoff)',
+      'Opcional: TELEGRAM_STAFF_CHAT_IDS (ou legado TELEGRAM_ALLOWED_CHAT_IDS) = seu chat ID',
     ],
   },
   {
@@ -88,7 +88,7 @@ export const SETUP_ITEMS: SetupItem[] = [
       'Vercel → TELEGRAM_BOT_TOKEN = token do bot',
       'Gere TELEGRAM_WEBHOOK_SECRET (string aleatória)',
       'setWebhook: https://rom-club.vercel.app/api/webhooks/telegram + secret_token',
-      'TELEGRAM_STAFF_CHAT_IDS = IDs da equipe (recomendado — restrinja o bot)',
+      'TELEGRAM_STAFF_CHAT_IDS = IDs da equipe (legado: TELEGRAM_ALLOWED_CHAT_IDS)',
       'Descubra seu chat ID: envie /start ao bot e veja nos logs, ou use @userinfobot',
     ],
     link: { href: 'https://t.me/BotFather', label: '@BotFather' },

@@ -39,7 +39,8 @@ export async function getHealthStatus() {
     telegram: {
       configured: envOk('TELEGRAM_BOT_TOKEN'),
       webhook_secret: envOk('TELEGRAM_WEBHOOK_SECRET'),
-      staff_whitelist: envOk('TELEGRAM_STAFF_CHAT_IDS'),
+      staff_whitelist:
+        envOk('TELEGRAM_STAFF_CHAT_IDS') || envOk('TELEGRAM_ALLOWED_CHAT_IDS'),
     },
     cron: { configured: envOk('CRON_SECRET') },
     auth: {

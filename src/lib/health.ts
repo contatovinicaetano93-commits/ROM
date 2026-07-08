@@ -3,6 +3,7 @@ import { isAvecConfigured, isAvecMock, getAvecBaseUrl } from '@/lib/avec/client'
 import { isAuthEnabled } from '@/lib/auth'
 import { isAiConfigured } from '@/lib/ai/client'
 import { getBrand, getRomPanelId } from '@/lib/brand'
+import { getDeploymentContext, validateDeploymentEnv } from '@/lib/deployment'
 
 function envOk(name: string) {
   return Boolean(process.env[name]?.trim())
@@ -31,9 +32,13 @@ export async function getHealthStatus() {
   const { connected, error } = await probeDatabase()
 
   const brand = getBrand()
+  const deployment = getDeploymentContext()
+  const validation = validateDeploymentEnv()
 
   return {
-    ok: connected,
+    ok: connected && validation.ok,
+    deployment,
+    validation,
     panel: {
       id: getRomPanelId(),
       display_name: brand.displayName,

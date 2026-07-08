@@ -54,6 +54,8 @@ interface AvecStatus {
 
 interface HealthStatus {
   ok: boolean
+  deployment?: { panel: string; display_name: string; host: string | null; vercel_env: string | null }
+  validation?: { ok: boolean; warnings: string[] }
   database: { configured: boolean; connected: boolean; error: string | null }
   claude: { configured: boolean; model?: string }
   avec: { configured: boolean; mock: boolean; token: boolean }
@@ -206,6 +208,29 @@ export default function AdminPage() {
 
       {error && (
         <div className="rounded-2xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">{error}</div>
+      )}
+
+      {health?.validation && health.validation.warnings.length > 0 && (
+        <div className="rounded-2xl border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-warning">
+          <p className="font-semibold">Atenção na configuração desta instância</p>
+          <ul className="mt-2 list-inside list-disc space-y-1 text-xs">
+            {health.validation.warnings.map((w) => (
+              <li key={w}>{w}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {health?.deployment && (
+        <div className="rounded-2xl border border-border bg-card px-4 py-3 text-sm">
+          <p className="text-xs text-muted">Instância Vercel</p>
+          <p className="font-medium">{health.deployment.display_name}</p>
+          <p className="mt-0.5 text-xs text-muted">
+            painel={health.deployment.panel}
+            {health.deployment.host ? ` · ${health.deployment.host}` : ''}
+            {health.deployment.vercel_env ? ` · ${health.deployment.vercel_env}` : ''}
+          </p>
+        </div>
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">

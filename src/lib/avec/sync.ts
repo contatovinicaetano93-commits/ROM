@@ -1,6 +1,12 @@
 import { getSql } from '@/lib/db'
 import { upsertContact, updateContact, logEvent } from '@/lib/contacts'
-import { listServices, addService, scheduleService, markServiceDone } from '@/lib/services'
+import {
+  listServices,
+  addService,
+  scheduleService,
+  markServiceDone,
+  patchServiceVisitMeta,
+} from '@/lib/services'
 import {
   fetchAllAvecReport,
   formatTruncationWarning,
@@ -145,8 +151,16 @@ async function syncAppointments(stats: AvecSyncStats, syncRunId?: string) {
         const service = await findOrCreateService(contact.id, appt.serviceName)
         if (!had) stats.services_created++
         if (!service.scheduled_at || service.scheduled_at !== appt.scheduledAt) {
-          await scheduleService(service.id, appt.scheduledAt)
+          await scheduleService(service.id, appt.scheduledAt, appt.professional, appt.price)
           stats.services_scheduled++
+        } else if (
+          (appt.professional && !service.professional_name) ||
+          (appt.price != null && service.last_price == null)
+        ) {
+          await patchServiceVisitMeta(service.id, {
+            professionalName: appt.professional,
+            lastPrice: appt.price,
+          })
         }
       }
 
@@ -187,7 +201,11 @@ async function syncAttendances(stats: AvecSyncStats, syncRunId?: string) {
         const service = await findOrCreateService(contact.id, att.serviceName)
         const isNew = servicesCreatedRecently(service)
         if (isNew) stats.services_created++
-        await markServiceDone(service.id)
+        await markServiceDone(service.id, {
+          doneAt: att.attendedAt,
+          professionalName: att.professional,
+          lastPrice: att.price,
+        })
         stats.services_completed++
       }
 

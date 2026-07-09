@@ -31,6 +31,7 @@ import {
 import { fmtSchedule, whatsAppUrl } from '@/lib/salon/format'
 import { CATEGORY_LABEL } from '@/lib/salon/constants'
 import { apiFetch } from '@/lib/api-client'
+import { LastVisitCard, type LastVisitData } from '../../_components/LastVisitCard'
 
 interface Service {
   id: string
@@ -40,6 +41,9 @@ interface Service {
   product: string | null
   notes: string | null
   scheduled_at: string | null
+  last_done_at: string | null
+  professional_name: string | null
+  last_price: number | null
   next_due_at: string | null
   days_until: number | null
   state: 'overdue' | 'due_soon' | 'ok' | 'no_cadence'
@@ -72,6 +76,7 @@ interface Profile {
   services: Service[]
   recommendations: Recommendation[]
   events: ContactEvent[]
+  last_visit: LastVisitData | null
 }
 
 const STATUS_FLOW = ['novo', 'em_atendimento', 'agendado', 'convertido', 'perdido']
@@ -307,7 +312,7 @@ export default function ContactDetailPage() {
     )
   }
 
-  const { contact, services, recommendations, events } = data
+  const { contact, services, recommendations, events, last_visit } = data
 
   return (
     <main className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-5 px-5 py-6 lg:gap-8 lg:px-8 lg:py-8">
@@ -360,6 +365,8 @@ export default function ContactDetailPage() {
           {contact.notes && <p className="mt-1 text-xs leading-relaxed text-muted">{contact.notes}</p>}
         </div>
       </div>
+
+      <LastVisitCard visit={last_visit} />
 
       {/* Status guiado */}
       <SectionCard title="Status do atendimento">

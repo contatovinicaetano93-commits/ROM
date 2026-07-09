@@ -4,7 +4,7 @@ import type { EnrichedService, Recommendation } from '@/lib/recommendations'
 import { fetchContactKpis } from '@/lib/salon/kpis'
 import { getSalonMetrics } from '@/lib/salon/metrics'
 import { listActionItems } from '@/lib/salon/recommendations'
-import { listUpcomingSchedules } from '@/lib/services'
+import { listUpcomingSchedules, pickLastVisit, type LastVisit } from '@/lib/services'
 
 function fmtService(s: EnrichedService) {
   const parts = [s.name]
@@ -15,6 +15,19 @@ function fmtService(s: EnrichedService) {
   return parts.join(' ')
 }
 
+function fmtLastVisit(v: LastVisit | null): string | null {
+  if (!v) return null
+  const when = new Date(v.last_done_at).toLocaleDateString('pt-BR')
+  const parts = [when, v.service_name]
+  if (v.professional_name) parts.push(`com ${v.professional_name}`)
+  if (v.last_price != null) {
+    parts.push(
+      v.last_price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+    )
+  }
+  return parts.join(' · ')
+}
+
 export interface ContactContext {
   cliente: {
     nome: string | null
@@ -22,6 +35,7 @@ export interface ContactContext {
     telefone: string | null
     notas: string | null
   }
+  ultima_visita: string | null
   servicos: string[]
   recomendacoes: { tipo: string; titulo: string; detalhe: string }[]
 }
@@ -46,6 +60,7 @@ export function buildContactContext(
       telefone: contact.phone,
       notas: contact.notes,
     },
+    ultima_visita: fmtLastVisit(pickLastVisit(services)),
     servicos: services.map(fmtService),
     recomendacoes: recs.map((r) => ({ tipo: r.type, titulo: r.title, detalhe: r.detail })),
   }
@@ -70,14 +85,24 @@ export async function buildSalonContext(): Promise<SalonContext> {
 }
 
 export function hashContactContext(contact: ContactRow, services: EnrichedService[], recs: Recommendation[]) {
+  const last = pickLastVisit(services)
   const payload = JSON.stringify({
     status: contact.status,
     notes: contact.notes,
+    ultima_visita: last
+      ? {
+          at: last.last_done_at,
+          service: last.service_name,
+          pro: last.professional_name,
+          price: last.last_price,
+        }
+      : null,
     services: services.map((s) => ({
       id: s.id,
       state: s.state,
       scheduled_at: s.scheduled_at,
       last_done_at: s.last_done_at,
+      professional_name: s.professional_name,
     })),
     recs: recs.map((r) => r.type + r.title),
   })

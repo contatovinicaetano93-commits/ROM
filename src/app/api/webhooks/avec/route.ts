@@ -18,6 +18,8 @@ const baseSchema = z.object({
   service_name: z.string().optional(),
   scheduled_at: z.string().datetime().optional(),
   completed_at: z.string().datetime().optional(),
+  professional_name: z.string().optional(),
+  price: z.number().positive().optional(),
   status: z.enum(['novo', 'em_atendimento', 'agendado', 'convertido', 'perdido']).optional(),
 })
 
@@ -56,7 +58,12 @@ export async function POST(req: NextRequest) {
             category: guessServiceCategory(payload.service_name),
           })
         }
-        await scheduleService(service.id, payload.scheduled_at)
+        await scheduleService(
+          service.id,
+          payload.scheduled_at,
+          payload.professional_name,
+          payload.price
+        )
         await updateContact(contact.id, { status: 'agendado' })
       }
     }
@@ -70,7 +77,11 @@ export async function POST(req: NextRequest) {
           category: guessServiceCategory(payload.service_name),
         })
       }
-      await markServiceDone(service.id)
+      await markServiceDone(service.id, {
+        doneAt: payload.completed_at,
+        professionalName: payload.professional_name,
+        lastPrice: payload.price,
+      })
       await updateContact(contact.id, { status: 'convertido' })
     }
 

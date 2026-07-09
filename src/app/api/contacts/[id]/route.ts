@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { ok, err, handleError } from '@/lib/api-response'
 import { getContactById, updateContact, logEvent, listEvents, CONTACT_STATUSES } from '@/lib/contacts'
-import { listServices, autoCompleteServicesOnConversion } from '@/lib/services'
+import { listServices, autoCompleteServicesOnConversion, pickLastVisit } from '@/lib/services'
 import { enrichServices, computeRecommendations } from '@/lib/recommendations'
 
 type Ctx = { params: Promise<{ id: string }> }
@@ -13,11 +13,13 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
     const contact = await getContactById(id)
     if (!contact) return err('Contato não encontrado', 404)
 
-    const services = enrichServices(await listServices(id))
+    const rawServices = await listServices(id)
+    const services = enrichServices(rawServices)
     const recommendations = computeRecommendations(services)
     const events = await listEvents(id)
+    const last_visit = pickLastVisit(rawServices)
 
-    return ok({ contact, services, recommendations, events })
+    return ok({ contact, services, recommendations, events, last_visit })
   } catch (e) {
     return handleError(e)
   }

@@ -30,6 +30,14 @@ export function formatCurrency(value: number | null | undefined) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
+export function formatVisitDate(iso: string) {
+  return new Date(iso).toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
 export function formatPercent(value: number | null | undefined, digits = 0) {
   if (value === null || value === undefined) return '—'
   return `${(value * 100).toFixed(digits)}%`

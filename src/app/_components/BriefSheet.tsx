@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { X, Sparkles, Copy, Check, ChevronRight } from 'lucide-react'
 import { apiFetch } from '@/lib/api-client'
+import { LastVisitCard, type LastVisitData } from './LastVisitCard'
 
 interface BriefSheetProps {
   contactId: string
@@ -13,6 +14,7 @@ interface BriefSheetProps {
 
 export function BriefSheet({ contactId, contactName, onClose }: BriefSheetProps) {
   const [brief, setBrief] = useState<{ text: string; source: string } | null>(null)
+  const [lastVisit, setLastVisit] = useState<LastVisitData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
@@ -28,6 +30,7 @@ export function BriefSheet({ contactId, contactName, onClose }: BriefSheetProps)
         setBrief(null)
         return
       }
+      setLastVisit(json.data?.last_visit ?? null)
       if (json.data?.brief) {
         setBrief({ text: json.data.brief, source: json.data.source })
       } else {
@@ -76,9 +79,16 @@ export function BriefSheet({ contactId, contactName, onClose }: BriefSheetProps)
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {loading && (
             <div className="space-y-2">
+              <div className="h-16 w-full animate-pulse rounded-2xl bg-border" />
               <div className="h-4 w-full animate-pulse rounded bg-border" />
               <div className="h-4 w-5/6 animate-pulse rounded bg-border" />
               <div className="h-4 w-4/6 animate-pulse rounded bg-border" />
+            </div>
+          )}
+
+          {!loading && (
+            <div className="mb-4">
+              <LastVisitCard visit={lastVisit} />
             </div>
           )}
 

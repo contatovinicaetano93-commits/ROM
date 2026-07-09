@@ -52,6 +52,7 @@ export interface NormalizedAvecAppointment {
   serviceName: string | null
   scheduledAt: string | null
   professional: string | null
+  price: number | null
   status: string | null
 }
 
@@ -61,6 +62,8 @@ export interface NormalizedAvecAttendance {
   phone: string | null
   serviceName: string | null
   attendedAt: string | null
+  professional: string | null
+  price: number | null
 }
 
 export interface NormalizedAvecRevenue {
@@ -146,11 +149,14 @@ export function normalizeAppointmentRow(row: Record<string, unknown>): Normalize
   const timePart = pick(row, ['hora', 'horario', 'horário', 'time', 'hora_agendamento'])
   const scheduledAt = parseAvecDateTime(datePart, timePart)
   const professional = pick(row, ['profissional', 'profissional_nome', 'nome_profissional'])
+  const price = parseOptionalMoney(
+    pick(row, ['valor', 'preco', 'preço', 'valor_servico', 'valor_serviço', 'price', 'amount', 'total'])
+  )
   const status = pick(row, ['status', 'situacao', 'situação'])
 
   if (!avecClientId && !clientName && !phone) return null
 
-  return { avecClientId, clientName, phone, email, serviceName, scheduledAt, professional, status }
+  return { avecClientId, clientName, phone, email, serviceName, scheduledAt, professional, price, status }
 }
 
 export function normalizeAttendanceRow(row: Record<string, unknown>): NormalizedAvecAttendance | null {
@@ -161,17 +167,27 @@ export function normalizeAttendanceRow(row: Record<string, unknown>): Normalized
   const datePart = pick(row, ['data', 'data_atendimento', 'data_realizacao', 'dia', 'date'])
   const timePart = pick(row, ['hora', 'horario', 'horário'])
   const attendedAt = parseAvecDateTime(datePart, timePart)
+  const professional = pick(row, ['profissional', 'profissional_nome', 'nome_profissional'])
+  const price = parseOptionalMoney(
+    pick(row, ['valor', 'preco', 'preço', 'valor_servico', 'valor_serviço', 'price', 'amount', 'total'])
+  )
 
   if (!avecClientId && !clientName && !phone) return null
 
-  return { avecClientId, clientName, phone, serviceName, attendedAt }
+  return { avecClientId, clientName, phone, serviceName, attendedAt, professional, price }
 }
 
 function parseMoney(raw: string | null): number {
-  if (!raw) return 0
-  const cleaned = raw.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.')
+  return parseOptionalMoney(raw) ?? 0
+}
+
+/** Preço unitário — null se ausente ou inválido (não trata 0 como valor). */
+export function parseOptionalMoney(raw: string | null | undefined): number | null {
+  if (raw == null || String(raw).trim() === '') return null
+  const cleaned = String(raw).replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.')
   const n = Number(cleaned)
-  return Number.isFinite(n) ? n : 0
+  if (!Number.isFinite(n) || n <= 0) return null
+  return n
 }
 
 export function normalizeRevenueRow(row: Record<string, unknown>): NormalizedAvecRevenue | null {

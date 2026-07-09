@@ -13,9 +13,27 @@ Header: `Authorization: Bearer $CRON_SECRET`
 
 O Hobby **só permite 1 cron/dia**. O `vercel.json` roda apenas o **full** às 8h.
 
-### Sync fast a cada 5 min (grátis)
+### Sync fast a cada 5 min — ativo neste Mac
 
-Use [cron-job.org](https://cron-job.org) ou similar:
+LaunchAgent `com.rombrasil.avec-sync-fast` chama o endpoint a cada **300s**.
+
+```bash
+# Status
+launchctl print "gui/$(id -u)/com.rombrasil.avec-sync-fast" | head -20
+cat ~/Library/Application\ Support/ROM-Brasil/sync.history.log | tail -5
+
+# Rodar agora
+~/bin/rom-brasil-avec-sync-fast.sh
+
+# Parar
+launchctl bootout "gui/$(id -u)/com.rombrasil.avec-sync-fast"
+```
+
+Script do repo (manual): `scripts/avec-sync-fast.sh`
+
+### Alternativa na nuvem (Mac desligado)
+
+Use [cron-job.org](https://cron-job.org):
 
 ```
 POST https://rom-club.vercel.app/api/avec/sync?mode=fast
@@ -43,6 +61,12 @@ Todas as métricas e logs referem **ROM Brasil** (`SALON_UNIT_NAME`).
 ```
 SALON_UNIT_NAME=ROM Brasil
 SALON_DAILY_GOAL=5000
-AVEC_API_TOKEN=...
+SALON_DAILY_CAPACITY=15
+AVEC_API_TOKEN=...   # obrigatório para sync real
 CRON_SECRET=...
 ```
+
+## Observação
+
+Sem `AVEC_API_TOKEN`, o cron roda a cada 5 min mas a API responde `Avec não configurado`.
+Quando o token chegar, o mesmo cron passa a alimentar `/hoje` automaticamente.

@@ -17,10 +17,13 @@ http = Path('/tmp/rom-avec-sync-http.txt').read_text().strip()
 print('HTTP', http)
 try:
     d = json.loads(Path('/tmp/rom-avec-sync-last.json').read_text())
-    data = d.get('data') or {}
-    print('status', data.get('status'), 'kind', data.get('kind'), 'error', data.get('error'))
-    stats = data.get('stats') or {}
-    print('panel', stats.get('panel'), 'appointments', stats.get('appointments_synced'), 'attendances', stats.get('attendances_synced'))
+    if 'error' in d:
+        print('error', d.get('error'))
+    else:
+        data = d.get('data') or {}
+        print('status', data.get('status'), 'kind', data.get('kind'), 'error', data.get('error'))
+        stats = data.get('stats') or {}
+        print('appointments', stats.get('appointments_synced'), 'attendances', stats.get('attendances_synced'), 'snapshots', stats.get('snapshots_saved'))
 except Exception as e:
     print('parse_error', e)
 PY

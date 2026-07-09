@@ -54,7 +54,8 @@ ou investigar depois.
    hora) e configurar o `setWebhook` apontando para
    `/api/webhooks/telegram` com um `secret_token`.
 7. Preencher `.env.local` com base no `.env.example`.
-8. **Produção:** configure `ROM_ADMIN_PASSWORD`, `CRON_SECRET`, `WHATSAPP_WEBHOOK_SECRET`
+8. **Produção:** configure `ROM_ADMIN_PASSWORD`, `ROM_STAFF_USER` / `ROM_STAFF_PASSWORD`
+   (funcionário: painel sem faturamento), `CRON_SECRET`, `WHATSAPP_WEBHOOK_SECRET`
    e `TELEGRAM_STAFF_CHAT_IDS` — sem eles, webhooks e sync ficam bloqueados em produção.
 
 ## Rodando local

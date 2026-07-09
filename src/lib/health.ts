@@ -69,6 +69,8 @@ export async function getHealthStatus() {
       enabled: isAuthEnabled(),
       password: envOk('ROM_ADMIN_PASSWORD') || envOk('ROM_ACCESS_TOKEN'),
       user: envOk('ROM_ADMIN_USER'),
+      staff_user: envOk('ROM_STAFF_USER'),
+      staff_password: envOk('ROM_STAFF_PASSWORD'),
     },
     webhooks: {
       avec_secret: envOk('AVEC_WEBHOOK_SECRET'),

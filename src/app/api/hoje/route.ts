@@ -1,4 +1,6 @@
-import { ok, handleError } from '@/lib/api-response'
+import { NextRequest } from 'next/server'
+import { ok, err, handleError } from '@/lib/api-response'
+import { requireSession } from '@/lib/auth'
 import { getSql } from '@/lib/db'
 import { getSalonMetrics, recomputeSalonMetricsFromRom } from '@/lib/salon/metrics'
 import { listActionItems } from '@/lib/salon/recommendations'
@@ -6,14 +8,17 @@ import { listUpcomingSchedules } from '@/lib/services'
 import { getLastAvecSync } from '@/lib/avec/sync'
 import { isAvecConfigured } from '@/lib/avec/client'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const auth = await requireSession(req)
+    if (!auth.ok) return err(auth.message, auth.status)
+
     await recomputeSalonMetricsFromRom().catch(() => {})
 
     const day = new Date().toISOString().slice(0, 10)
     const sql = getSql()
 
-    const [salon, playbook, scheduleToday, leadRows, avecLast] = await Promise.all([
+    const [salonRaw, playbook, scheduleToday, leadRows, avecLast] = await Promise.all([
       getSalonMetrics(day),
       listActionItems(),
       listUpcomingSchedules(1, 15),
@@ -27,21 +32,32 @@ export async function GET() {
     ])
 
     const leads = leadRows[0] as { novos: number; whatsapp_novos: number }
+    const salonBase = salonRaw ?? {
+      day,
+      revenue: 0,
+      appointments: scheduleToday.length,
+      attended: 0,
+      no_shows: 0,
+      cancelled: 0,
+      new_clients: leads.novos,
+      returning_clients: 0,
+      ticket_avg: null,
+      updated_at: new Date().toISOString(),
+    }
+
+    const salon = auth.session.can_view_revenue
+      ? salonBase
+      : {
+          ...salonBase,
+          revenue: null,
+          ticket_avg: null,
+        }
 
     return ok({
       day,
-      salon: salon ?? {
-        day,
-        revenue: 0,
-        appointments: scheduleToday.length,
-        attended: 0,
-        no_shows: 0,
-        cancelled: 0,
-        new_clients: leads.novos,
-        returning_clients: 0,
-        ticket_avg: null,
-        updated_at: new Date().toISOString(),
-      },
+      salon,
+      can_view_revenue: auth.session.can_view_revenue,
+      role: auth.session.role,
       playbook: playbook.slice(0, 8),
       scheduleToday,
       leads: {

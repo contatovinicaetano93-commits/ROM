@@ -111,6 +111,9 @@ export function salonContextForAI(ctx: SalonContext) {
       meta_dia: intel.daily_goal,
       progresso_meta: intel.goal_progress,
       falta_meta: intel.goal_gap,
+      ocupacao: intel.occupancy_rate,
+      capacidade_dia: intel.daily_capacity,
+      resumo_hoje: intel.day_insight,
     },
     contatos: {
       por_status: ctx.kpis_contato.byStatus,

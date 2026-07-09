@@ -56,6 +56,9 @@ interface HojeData {
     daily_goal: number
     goal_progress: number | null
     goal_gap: number
+    daily_capacity: number
+    occupancy_rate: number | null
+    day_insight: string
   }
   playbook: PlaybookItem[]
   scheduleToday: ScheduleItem[]
@@ -107,7 +110,7 @@ export default function HojePage() {
         </div>
       )}
 
-      {/* KPIs do salão */}
+      {/* KPIs do salão — poucos números */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <KpiCard
           icon={<DollarSign size={16} />}
@@ -136,60 +139,27 @@ export default function HojePage() {
         />
       </div>
 
-      {/* KPIs inteligentes — ROM Brasil */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <KpiCard
-          icon={<TrendingUp size={16} />}
-          label="Comparecimento"
-          value={loading ? '—' : attendanceRateLabel(intel?.attendance_rate ?? null)}
-          loading={loading}
-          highlight={
-            intel?.attendance_rate != null && intel.attendance_rate >= 0.85
-              ? 'success'
-              : intel?.attendance_rate != null && intel.attendance_rate < 0.7
-                ? 'warn'
-                : undefined
-          }
-          hint={
-            !loading && salon
-              ? `${salon.attended} de ${salon.appointments} agendados`
-              : undefined
-          }
-        />
-        <KpiCard
-          icon={<AlertTriangle size={16} />}
-          label="Receita em risco"
-          value={loading ? '—' : formatCurrency(intel?.revenue_at_risk)}
-          loading={loading}
-          warn={(intel?.revenue_at_risk ?? 0) > 0}
-          hint={
-            !loading && (intel?.revenue_at_risk ?? 0) > 0
-              ? `${salon?.no_shows ?? 0} no-show(s) × ticket médio`
-              : undefined
-          }
-        />
-        <KpiCard
-          icon={<DollarSign size={16} />}
-          label="Meta do dia"
-          value={loading ? '—' : goalProgressLabel(intel?.goal_progress ?? null)}
-          loading={loading}
-          hint={
-            !loading && intel
-              ? `${formatCurrency(salon?.revenue)} de ${formatCurrency(intel.daily_goal)} · faltam ${formatCurrency(intel.goal_gap)}`
-              : undefined
-          }
-        />
-      </div>
-
-      {!loading && (intel?.revenue_at_risk ?? 0) > 0 && (
-        <div className="flex items-start gap-3 rounded-2xl border border-warning/30 bg-warning/10 p-4">
-          <DollarSign size={18} className="mt-0.5 shrink-0 text-warning" />
-          <p className="text-sm">
-            <span className="font-semibold text-warning">
-              {formatCurrency(intel!.revenue_at_risk)} em risco
-            </span>
-            {' — '}confirme agendamentos pendentes e recupere no-shows (ROM Brasil).
-          </p>
+      {/* Uma linha: meta · no-shows · ocupação — sem cards extras */}
+      {!loading && intel?.day_insight && (
+        <div className="rounded-2xl border border-gold/25 bg-gold/5 px-4 py-3">
+          <p className="text-[0.65rem] uppercase tracking-[0.2em] text-gold">Resumo do dia</p>
+          <p className="mt-1 text-sm leading-snug text-foreground/90">{intel.day_insight}</p>
+          {(intel.goal_progress != null || intel.occupancy_rate != null) && (
+            <p className="mt-1 text-xs text-muted">
+              {intel.goal_progress != null && (
+                <span>Meta {goalProgressLabel(intel.goal_progress)}</span>
+              )}
+              {intel.goal_progress != null && intel.occupancy_rate != null && ' · '}
+              {intel.occupancy_rate != null && (
+                <span>Ocupação {attendanceRateLabel(intel.occupancy_rate)}</span>
+              )}
+              {intel.attendance_rate != null && (
+                <span>
+                  {' · '}Comparecimento {attendanceRateLabel(intel.attendance_rate)}
+                </span>
+              )}
+            </p>
+          )}
         </div>
       )}
 

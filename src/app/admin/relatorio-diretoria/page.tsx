@@ -385,6 +385,26 @@ export default function RelatorioDiretoriaPage() {
           </SectionCard>
 
           <SectionCard title="0011 · Lista de clientes (formato Avec)">
+            <div className="mb-4 space-y-2 rounded-xl border border-border bg-surface/60 px-4 py-3 text-xs leading-relaxed text-muted">
+              <p>
+                <span className="font-semibold text-foreground/85">O que é esta lista:</span> clientes
+                de <span className="text-foreground/80">recall / reativação</span> — já foram
+                atendidos por aquele profissional e{' '}
+                <span className="text-foreground/80">ainda não voltaram</span> no período do
+                relatório. Não é a agenda do dia nem todos os clientes do profissional.
+              </p>
+              <p>
+                Cada linha traz contato e data da <span className="text-foreground/80">última visita</span>{' '}
+                para a recepção reaquecer o lead (WhatsApp). Na tela mostramos uma amostra (até 12 por
+                profissional); a lista completa vai no CSV / e-mail.
+              </p>
+              {data?.source === 'mock' && (
+                <p className="text-warning">
+                  Dados de demonstração (mock). Com a Avec real, entram os clientes 0011 de verdade —
+                  hoje só a lista da Dani Mariniello usa fixture real.
+                </p>
+              )}
+            </div>
             <div className="space-y-4">
               {(proId0011 ? selectedReturn : selectedReturn.slice(0, 3)).map(
                 ({ pro, reactivation }) => (

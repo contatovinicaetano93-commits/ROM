@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { ok, err, handleError } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/auth'
+import { isCronAuthorized } from '@/lib/cron-auth'
 import { buildDirectorReport } from '@/lib/director-report/build'
 import {
   reactivationCsv,
@@ -31,17 +32,8 @@ function asStage(v: string | null | undefined): DirectorReportStage {
   return 'all'
 }
 
-function isCronInvocation(req: NextRequest) {
-  const cron = process.env.CRON_SECRET?.trim()
-  const authHeader = req.headers.get('authorization')
-  if (cron && authHeader === `Bearer ${cron}`) return true
-  if (cron && req.headers.get('x-cron-secret') === cron) return true
-  if (req.headers.get('x-vercel-cron') === '1') return true
-  return false
-}
-
 async function runDelivery(
-  req: NextRequest,
+  _req: NextRequest,
   opts: {
     stage: DirectorReportStage
     forceMock: boolean
@@ -97,9 +89,9 @@ async function runDelivery(
 /** GET — admin: JSON/CSV · cron Vercel: dispara envio (terças). */
 export async function GET(req: NextRequest) {
   try {
-    const cron = isCronInvocation(req)
+    const cron = isCronAuthorized(req)
 
-    // Vercel Cron = GET — precisa enviar o relatório (antes só POST entregava).
+    // Vercel Cron = GET + Authorization: Bearer CRON_SECRET
     if (cron) {
       return await runDelivery(req, {
         stage: 'all',
@@ -172,7 +164,7 @@ export async function GET(req: NextRequest) {
 /** POST — dispara etapa(s) do relatório (cron com body ou admin). */
 export async function POST(req: NextRequest) {
   try {
-    const cron = isCronInvocation(req)
+    const cron = isCronAuthorized(req)
 
     if (!cron) {
       const auth = await requireAdmin(req)

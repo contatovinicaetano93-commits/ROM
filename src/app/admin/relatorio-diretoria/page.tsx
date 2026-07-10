@@ -20,35 +20,87 @@ import { buildRecallWhatsAppMessage } from '@/lib/director-report/recall-message
 
 type StageTab = '0011' | '0021'
 
-const QUARTERS = [
-  { value: '2025-Q1', label: '1º tri 2025' },
-  { value: '2025-Q2', label: '2º tri 2025' },
-  { value: '2025-Q3', label: '3º tri 2025' },
-  { value: '2025-Q4', label: '4º tri 2025' },
-  { value: '2026-Q1', label: '1º tri 2026' },
-]
+const MONTH_LABELS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 
-const MONTHS = [
-  ...Array.from({ length: 12 }, (_, i) => ({
-    value: `2025-${String(i + 1).padStart(2, '0')}`,
-    label: `${['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'][i]} 2025`,
-  })),
-  { value: '2026-01', label: 'Jan 2026' },
-  { value: '2026-02', label: 'Fev 2026' },
-  { value: '2026-03', label: 'Mar 2026' },
-]
+function spNowParts() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+  }).formatToParts(new Date())
+  return {
+    year: Number(parts.find((p) => p.type === 'year')?.value),
+    month: Number(parts.find((p) => p.type === 'month')?.value),
+  }
+}
+
+function buildQuarterOptions() {
+  const { year, month } = spNowParts()
+  const currentQ = Math.ceil(month / 3)
+  const out: { value: string; label: string }[] = []
+  for (let y = 2025; y <= year; y++) {
+    const maxQ = y === year ? currentQ : 4
+    for (let q = 1; q <= maxQ; q++) {
+      out.push({ value: `${y}-Q${q}`, label: `${q}º tri ${y}` })
+    }
+  }
+  return out
+}
+
+function buildMonthOptions() {
+  const { year, month } = spNowParts()
+  const out: { value: string; label: string }[] = []
+  for (let y = 2025; y <= year; y++) {
+    const maxM = y === year ? month : 12
+    for (let m = 1; m <= maxM; m++) {
+      out.push({
+        value: `${y}-${String(m).padStart(2, '0')}`,
+        label: `${MONTH_LABELS[m - 1]} ${y}`,
+      })
+    }
+  }
+  return out
+}
+
+function defaultMonthKey() {
+  const { year, month } = spNowParts()
+  return `${year}-${String(month).padStart(2, '0')}`
+}
+
+function previousMonthKey(key: string) {
+  const [y, m] = key.split('-').map(Number)
+  if (!y || !m) return key
+  if (m === 1) return `${y - 1}-12`
+  return `${y}-${String(m - 1).padStart(2, '0')}`
+}
+
+function defaultQuarterKey() {
+  const { year, month } = spNowParts()
+  return `${year}-Q${Math.ceil(month / 3)}`
+}
+
+function previousQuarterKey(key: string) {
+  const [y, qStr] = key.split('-Q')
+  const year = Number(y)
+  const q = Number(qStr)
+  if (q === 1) return `${year - 1}-Q4`
+  return `${year}-Q${q - 1}`
+}
+
+const QUARTERS = buildQuarterOptions()
+const MONTHS = buildMonthOptions()
 
 export default function RelatorioDiretoriaPage() {
   const [tab, setTab] = useState<StageTab>('0011')
 
-  // Estado independente por etapa
+  // Estado independente por etapa — defaults = período corrente (SP)
   const [proId0011, setProId0011] = useState('')
-  const [quarter, setQuarter] = useState('2026-Q1')
-  const [compare, setCompare] = useState('2025-Q1')
+  const [quarter, setQuarter] = useState(defaultQuarterKey)
+  const [compare, setCompare] = useState(() => previousQuarterKey(defaultQuarterKey()))
 
   const [proId0021, setProId0021] = useState('')
-  const [month, setMonth] = useState('2026-03')
-  const [compareMonth, setCompareMonth] = useState('2026-02')
+  const [month, setMonth] = useState(defaultMonthKey)
+  const [compareMonth, setCompareMonth] = useState(() => previousMonthKey(defaultMonthKey()))
   const [compareMonths, setCompareMonths] = useState(false)
 
   const [data, setData] = useState<DirectorReport | null>(null)
@@ -176,7 +228,6 @@ export default function RelatorioDiretoriaPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          mock: true,
           stage: '0011',
           quarter,
           compare,
@@ -197,7 +248,6 @@ export default function RelatorioDiretoriaPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          mock: true,
           stage: '0021',
           month,
           compare_month: compareMonth,

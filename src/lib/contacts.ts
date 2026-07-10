@@ -184,14 +184,15 @@ export async function updateContact(id: string, patch: UpdateContactInput): Prom
     if (current) status = mergeContactStatus(current.status as ContactStatus, patch.status)
   }
 
+  // null no PATCH = limpeza explícita → grava '' (≠ SQL NULL = nunca definido).
   const manicurist =
     patch.preferredManicurist === undefined
       ? null
-      : patch.preferredManicurist?.trim() || null
+      : (patch.preferredManicurist?.trim() ?? '')
   const hairstylist =
     patch.preferredHairstylist === undefined
       ? null
-      : patch.preferredHairstylist?.trim() || null
+      : (patch.preferredHairstylist?.trim() ?? '')
 
   const rows = (await sql`
     update contacts set
@@ -215,7 +216,10 @@ export async function updateContact(id: string, patch: UpdateContactInput): Prom
   return rows[0] ?? null
 }
 
-/** Define manicure preferida (sync Avec / última visita de unha). */
+/**
+ * Define manicure preferida (sync Avec).
+ * Só preenche se ainda for NULL — '' = limpeza manual, não sobrescrever.
+ */
 export async function setPreferredManicurist(
   contactId: string,
   manicurist: string
@@ -225,12 +229,16 @@ export async function setPreferredManicurist(
   const sql = getSql()
   await sql`
     update contacts
-    set preferred_manicurist = ${name}, last_contact_at = last_contact_at
+    set preferred_manicurist = ${name}
     where id = ${contactId}
+      and preferred_manicurist is null
   `
 }
 
-/** Define cabeleireiro preferido (sync Avec / última visita de cabelo). */
+/**
+ * Define cabeleireiro preferido (sync Avec).
+ * Só preenche se ainda for NULL — '' = limpeza manual, não sobrescrever.
+ */
 export async function setPreferredHairstylist(
   contactId: string,
   hairstylist: string
@@ -240,8 +248,9 @@ export async function setPreferredHairstylist(
   const sql = getSql()
   await sql`
     update contacts
-    set preferred_hairstylist = ${name}, last_contact_at = last_contact_at
+    set preferred_hairstylist = ${name}
     where id = ${contactId}
+      and preferred_hairstylist is null
   `
 }
 

@@ -4,6 +4,7 @@
 // Auth: header Authorization = token puro (sem "Bearer").
 
 import { getMockReport } from '@/lib/avec/fixtures'
+import { todayIso } from '@/lib/salon/format'
 
 export const AVEC_DEFAULT_API_URL = 'https://api.avec.beauty'
 
@@ -69,14 +70,24 @@ export function fmtAvecDate(d: Date) {
   return `${dd}/${mm}/${yyyy}`
 }
 
+function fmtBrFromYmd(isoYmd: string) {
+  const [y, m, d] = isoYmd.split('-')
+  return `${d}/${m}/${y}`
+}
+
+function addCalendarDays(isoYmd: string, delta: number) {
+  const [y, m, d] = isoYmd.split('-').map(Number)
+  const dt = new Date(Date.UTC(y!, m! - 1, d! + delta))
+  return dt.toISOString().slice(0, 10)
+}
+
+/** Intervalo em datas de calendário America/Sao_Paulo (não UTC do servidor). */
 export function periodRange(daysBack = 0, daysForward = 14) {
-  const start = new Date()
-  start.setHours(0, 0, 0, 0)
-  start.setDate(start.getDate() - daysBack)
-  const end = new Date()
-  end.setHours(23, 59, 59, 999)
-  end.setDate(end.getDate() + daysForward)
-  return { inicio: fmtAvecDate(start), fim: fmtAvecDate(end) }
+  const today = todayIso()
+  return {
+    inicio: fmtBrFromYmd(addCalendarDays(today, -daysBack)),
+    fim: fmtBrFromYmd(addCalendarDays(today, daysForward)),
+  }
 }
 
 // Extrai linhas do JSON de relatório — formato varia por endpoint.

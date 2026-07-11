@@ -6,7 +6,12 @@ import {
 } from '@/lib/avec/normalize'
 import { getAvecReportRegistry, resolveReportId } from '@/lib/avec/registry'
 import { matchDirectorProfessional } from './match-pro'
-import { labelMonth, labelQuarter } from './period'
+import {
+  aggregateQuarterRevenue,
+  labelMonth,
+  labelQuarter,
+  monthsInComparableQuarter,
+} from './period'
 import type {
   DirectorProfessional,
   MonthKey,
@@ -107,6 +112,59 @@ async function fetch0021Month(
     byName.set(p.name, cur)
   }
   return byName
+}
+
+/** Todos os meses de 2025 até `latest` (inclusive) — usado no perfil individual (022). */
+function allMonthsUpTo(latest: MonthKey): MonthKey[] {
+  const [yStr, mStr] = latest.split('-')
+  const endY = Number(yStr)
+  const endM = Number(mStr)
+  const out: MonthKey[] = []
+  for (let y = 2025; y <= endY; y++) {
+    const lastM = y === endY ? endM : 12
+    for (let m = 1; m <= lastM; m++) {
+      out.push(`${y}-${String(m).padStart(2, '0')}` as MonthKey)
+    }
+  }
+  return out
+}
+
+/** Série mensal completa (2025 → mês atual) de um único profissional — perfil individual (022). */
+export async function fetchProfessionalProfileMonths(
+  professional: DirectorProfessional,
+  latestMonth: MonthKey,
+): Promise<MonthRevenueRow[]> {
+  const months = allMonthsUpTo(latestMonth)
+  async function fetchProfessionalMonth(m: MonthKey): Promise<MonthRevenueRow> {
+    try {
+      const map = await fetch0021Month(m)
+      let hit: { revenue: number; attended: number; ticketAvg: number } | undefined
+      for (const [avecName, stats] of map) {
+        if (matchDirectorProfessional(avecName, [professional])) {
+          hit = stats
+          break
+        }
+      }
+      return hit
+        ? {
+            month: m,
+            label: labelMonth(m),
+            revenue: Math.round(hit.revenue),
+            ticket_avg: Math.round(hit.ticketAvg),
+            attended: hit.attended,
+          }
+        : emptyMonthRow(m)
+    } catch {
+      return emptyMonthRow(m)
+    }
+  }
+
+  const rows: MonthRevenueRow[] = []
+  for (let i = 0; i < months.length; i += 3) {
+    const chunk = months.slice(i, i + 3)
+    rows.push(...(await Promise.all(chunk.map(fetchProfessionalMonth))))
+  }
+  return rows
 }
 
 type QuarterAgg = {
@@ -238,13 +296,31 @@ export interface LiveDirectorBlocks {
 export async function fetchLiveDirectorBlocks(
   professionals: DirectorProfessional[],
   selectedMonth: MonthKey,
-  compareMonth: MonthKey | null,
+  selectedQuarter0021: QuarterKey,
+  compareQuarter0021: QuarterKey | null,
   selectedQuarter: QuarterKey,
   compareQuarter: QuarterKey,
 ): Promise<LiveDirectorBlocks> {
   const warnings: string[] = []
   const monthsNeeded = new Set<MonthKey>([selectedMonth])
-  if (compareMonth) monthsNeeded.add(compareMonth)
+  if (compareQuarter0021) {
+    for (const m of monthsInComparableQuarter(
+      selectedQuarter0021,
+      selectedMonth,
+      selectedQuarter0021,
+      compareQuarter0021
+    )) {
+      monthsNeeded.add(m)
+    }
+    for (const m of monthsInComparableQuarter(
+      compareQuarter0021,
+      selectedMonth,
+      selectedQuarter0021,
+      compareQuarter0021
+    )) {
+      monthsNeeded.add(m)
+    }
+  }
 
   const monthMaps = new Map<
     MonthKey,
@@ -368,7 +444,12 @@ export async function fetchLiveDirectorBlocks(
       )
     }
     months.sort((a, b) => a.month.localeCompare(b.month))
-    return { professional, months, selected_month: selectedMonth }
+    return {
+      professional,
+      months,
+      quarters: aggregateQuarterRevenue(months),
+      selected_month: selectedMonth,
+    }
   })
 
   const return_blocks: ProfessionalReturnBlock[] = professionals.map((professional) => {

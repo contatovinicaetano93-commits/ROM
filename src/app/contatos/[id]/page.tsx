@@ -30,7 +30,7 @@ import {
   CHANNEL_LABEL,
   STATUS_LABEL,
 } from '../../_components/ui'
-import { fmtSchedule, whatsAppUrl } from '@/lib/salon/format'
+import { fmtSchedule, whatsAppUrl, formatCurrency } from '@/lib/salon/format'
 import { CATEGORY_LABEL } from '@/lib/salon/constants'
 import { apiFetch } from '@/lib/api-client'
 import { buildClientWhatsAppMessage } from '@/lib/whatsapp/client-message'
@@ -76,12 +76,19 @@ interface ContactEvent {
   error: string | null
   created_at: string
 }
+interface ClientStats {
+  ticket_avg: number | null
+  cadence_avg_days: number | null
+  completed_services_count: number
+  ltv_projection: number | null
+}
 interface Profile {
   contact: Contact
   services: Service[]
   recommendations: Recommendation[]
   events: ContactEvent[]
   last_visit: LastVisitData | null
+  client_stats: ClientStats
 }
 
 const STATUS_FLOW = ['novo', 'em_atendimento', 'agendado', 'convertido', 'perdido']
@@ -317,7 +324,7 @@ export default function ContactDetailPage() {
     )
   }
 
-  const { contact, services, recommendations, events, last_visit } = data
+  const { contact, services, recommendations, events, last_visit, client_stats } = data
   const clientWhatsAppText = buildClientWhatsAppMessage({
     contact,
     services,
@@ -396,6 +403,43 @@ export default function ContactDetailPage() {
       </div>
 
       <LastVisitCard visit={last_visit} />
+
+      {/* Ficha do cliente (Sprint 3) */}
+      {(client_stats.ticket_avg != null ||
+        client_stats.cadence_avg_days != null ||
+        client_stats.completed_services_count > 0) && (
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-xl border border-border bg-surface/80 px-3 py-2.5">
+            <p className="text-[0.65rem] uppercase tracking-wide text-muted">Ticket médio</p>
+            <p className="mt-1 text-sm font-semibold tabular-nums">
+              {client_stats.ticket_avg != null ? formatCurrency(client_stats.ticket_avg) : '—'}
+            </p>
+          </div>
+          <div className="rounded-xl border border-border bg-surface/80 px-3 py-2.5">
+            <p className="text-[0.65rem] uppercase tracking-wide text-muted">Cadência esperada</p>
+            <p className="mt-1 text-sm font-semibold tabular-nums">
+              {client_stats.cadence_avg_days != null ? `${client_stats.cadence_avg_days}d` : '—'}
+            </p>
+          </div>
+          <div className="rounded-xl border border-border bg-surface/80 px-3 py-2.5">
+            <p className="text-[0.65rem] uppercase tracking-wide text-muted">Serviços realizados</p>
+            <p className="mt-1 text-sm font-semibold tabular-nums">{client_stats.completed_services_count}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-surface/80 px-3 py-2.5">
+            <p className="text-[0.65rem] uppercase tracking-wide text-muted">
+              LTV projetado (2a)
+            </p>
+            <p className="mt-1 text-sm font-semibold tabular-nums">
+              {client_stats.ltv_projection != null ? formatCurrency(client_stats.ltv_projection) : '—'}
+            </p>
+          </div>
+        </div>
+      )}
+      {client_stats.ltv_projection != null && (
+        <p className="-mt-3 text-[0.65rem] text-muted">
+          LTV é projeção (ticket médio × frequência × 2 anos), não histórico real de gasto.
+        </p>
+      )}
 
       {/* Status guiado */}
       <SectionCard title="Status do atendimento">

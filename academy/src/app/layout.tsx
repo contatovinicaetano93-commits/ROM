@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Cormorant_Garamond, Fraunces, Hanken_Grotesk, Spline_Sans_Mono } from 'next/font/google'
+import './site.css'
 import './globals.css'
 import { Analytics } from '@/components/analytics'
 import { FloatingScissors } from '@/components/floating-scissors'

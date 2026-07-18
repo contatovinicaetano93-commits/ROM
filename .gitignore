@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+**/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -15,6 +16,7 @@
 
 # next.js
 /.next/
+**/.next/
 /out/
 
 # production
@@ -50,5 +52,7 @@ graphify-out/
 
 # pastas locais fora do app principal
 _wip/
-academy/
 concept/
+
+# academy é app Next separado (deploy Vercel root=academy);
+# node_modules/.next locais continuam ignorados pelas regras acima.

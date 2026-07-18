@@ -1,0 +1,16 @@
+/* Cursor customizado quando a tesoura está ativa (desktop). */
+html.scissors-cursor,
+html.scissors-cursor body,
+html.scissors-cursor a,
+html.scissors-cursor button {
+  cursor: none !important;
+}
+
+@media (pointer: coarse) {
+  html.scissors-cursor,
+  html.scissors-cursor body,
+  html.scissors-cursor a,
+  html.scissors-cursor button {
+    cursor: auto !important;
+  }
+}
